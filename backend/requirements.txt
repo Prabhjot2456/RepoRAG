@@ -1,0 +1,43 @@
+# FastAPI and server
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+sse-starlette==2.1.3
+
+# Pydantic
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# HTTP client
+httpx==0.27.2
+
+# GitHub and Git
+GitPython==3.1.43
+PyGithub==2.4.0
+
+# Embeddings (sentence-transformers downloads torch automatically)
+sentence-transformers>=2.2.2
+
+# Vector DB — pure Python (no C++ build tools required)
+# Uses numpy cosine similarity; swap for chromadb if MSVC is available
+numpy>=1.24.0
+
+# BM25 for hybrid retrieval
+rank-bm25==0.2.2
+
+# LLM providers
+openai>=1.0.0
+
+# File parsing
+chardet==5.2.0
+
+# Logging
+structlog==24.4.0
+
+# Testing
+pytest==8.3.3
+pytest-asyncio==0.24.0
+
+# Utilities
+python-dotenv==1.0.1
+tenacity==9.0.0

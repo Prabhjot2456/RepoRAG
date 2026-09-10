@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Repository AI Analyst</title>
+  <meta name="description" content="Ask anything about any GitHub repository using AI — RAG-powered code analysis with source citations." />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css" />
+
+  <!-- Syntax highlighting (highlight.js) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>" />
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ APP ══ -->
+<div id="app">
+
+  <!-- ── Header ──────────────────────────────────────────────────── -->
+  <header id="app-header">
+    <div class="header-logo">
+      <div class="logo-icon">🔍</div>
+      <span>RepoRAG</span>
+    </div>
+
+    <div class="url-bar">
+      <input
+        type="text"
+        id="repo-url-input"
+        placeholder="https://github.com/owner/repository"
+        spellcheck="false"
+        autocomplete="off"
+      />
+      <button class="btn btn-primary" id="analyze-btn">
+        🔍 Analyze
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Main ────────────────────────────────────────────────────── -->
+  <div id="main-content">
+
+    <!-- ── Landing ───────────────────────────────────────────────── -->
+    <section id="landing">
+      <div class="landing-hero">
+        <h1>ChatGPT for<br>Any GitHub Repository</h1>
+        <p>Paste a GitHub URL. Ask anything. Get answers grounded in the actual repository code, docs, and config — with source citations.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="icon">🧠</div>
+          <h3>RAG-Powered</h3>
+          <p>Hybrid vector + BM25 retrieval. Answers anchored to real repository content.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📎</div>
+          <h3>Source Citations</h3>
+          <p>Every answer links back to the exact file and line numbers in the repo.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🔒</div>
+          <h3>Local & Private</h3>
+          <p>Runs entirely on your machine. No data leaves your system.</p>
+        </div>
+      </div>
+
+      <div class="example-repos">
+        <span style="font-size:.8rem;color:var(--text-muted)">Try an example:</span>
+        <div class="example-chip" data-url="https://github.com/tiangolo/fastapi">tiangolo/fastapi</div>
+        <div class="example-chip" data-url="https://github.com/pallets/flask">pallets/flask</div>
+        <div class="example-chip" data-url="https://github.com/psf/requests">psf/requests</div>
+        <div class="example-chip" data-url="https://github.com/expressjs/express">expressjs/express</div>
+      </div>
+
+      <div id="recent-repos" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:-16px;"></div>
+    </section>
+
+    <!-- ── Workspace ──────────────────────────────────────────────── -->
+    <div id="workspace" class="hidden">
+
+      <!-- ── Sidebar ─────────────────────────────────────────────── -->
+      <aside id="sidebar">
+        <div class="sidebar-tabs">
+          <button class="sidebar-tab active" data-tab="info">Info</button>
+          <button class="sidebar-tab" data-tab="files">Files</button>
+        </div>
+
+        <!-- Info panel -->
+        <div class="sidebar-panel active" id="sidebar-info">
+          <div style="color:var(--text-muted);font-size:.82rem;padding:8px;">Repository info will appear here after analysis.</div>
+        </div>
+
+        <!-- Files panel -->
+        <div class="sidebar-panel" id="sidebar-files">
+          <div id="file-tree-container" class="file-tree">
+            <div style="color:var(--text-muted);font-size:.82rem;padding:8px;">File tree will appear after analysis.</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── Chat area ───────────────────────────────────────────── -->
+      <main id="chat-area">
+
+        <!-- Progress overlay -->
+        <div id="progress-overlay" class="hidden">
+          <div class="progress-card">
+            <h2>Analyzing Repository</h2>
+            <p class="progress-subtitle">This may take 1–5 minutes depending on repository size</p>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" style="width:0%"></div>
+            </div>
+            <div class="progress-steps">
+              <div class="progress-step active">
+                <span class="step-icon">⏳</span>Initializing...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat messages -->
+        <div id="chat-messages" class="hidden"></div>
+
+        <!-- File viewer -->
+        <div id="file-viewer" class="hidden">
+          <div class="file-viewer-header">
+            <button id="file-viewer-back" class="btn btn-ghost" style="padding:6px 10px;font-size:.8rem;">← Back to Chat</button>
+            <span class="file-path">—</span>
+          </div>
+          <div class="file-viewer-content">
+            <pre class="hljs"><code></code></pre>
+          </div>
+        </div>
+
+        <!-- Chat input -->
+        <div id="chat-input-area" class="hidden">
+          <div class="input-box">
+            <textarea
+              id="question-input"
+              placeholder="Ask anything about this repository... (Shift+Enter for new line)"
+              rows="1"
+            ></textarea>
+            <button id="send-btn" title="Send (Enter)">➤</button>
+          </div>
+        </div>
+
+      </main>
+    </div><!-- /workspace -->
+
+  </div><!-- /main-content -->
+</div><!-- /app -->
+
+<!-- ── Source modal ──────────────────────────────────────────────── -->
+<div id="source-modal" class="hidden" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>source.file</h3>
+      <button class="modal-close" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-meta">Language · Lines</div>
+    <div class="modal-content">
+      <pre class="hljs"><code></code></pre>
+    </div>
+    <a class="modal-github-link" href="#" target="_blank" rel="noopener">
+      🔗 View on GitHub
+    </a>
+  </div>
+</div>
+
+<!-- ── Toast container ───────────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ── Scripts ───────────────────────────────────────────────────── -->
+<!-- Marked.js for markdown rendering -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<!-- Highlight.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<!-- App scripts (order matters) -->
+<script src="js/api.js"></script>
+<script src="js/markdown.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/explorer.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
