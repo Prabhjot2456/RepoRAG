@@ -6,6 +6,7 @@ Uses Google Gemini API for embeddings instead of local models to save RAM.
 from __future__ import annotations
 
 import httpx
+import time
 from typing import List
 
 from app.config import settings
@@ -41,19 +42,37 @@ def embed_texts(texts: List[str], batch_size: int = 64) -> List[List[float]]:
                 "content": {"parts": [{"text": safe_text}]}
             })
             
-        with httpx.Client(timeout=30.0) as client:
-            response = client.post(url, json={"requests": requests})
+        retry_count = 0
+        while retry_count < 5:
+            with httpx.Client(timeout=30.0) as client:
+                response = client.post(url, json={"requests": requests})
+                
+                if response.status_code == 429:
+                    # Rate limit hit, wait and retry
+                    wait_time = 4 * (2 ** retry_count)  # 4s, 8s, 16s...
+                    logger.warning("gemini_rate_limit_hit", waiting=wait_time, retry=retry_count)
+                    time.sleep(wait_time)
+                    retry_count += 1
+                    continue
+                    
+                if response.status_code != 200:
+                    logger.error("gemini_embedding_failed", status=response.status_code, text=response.text)
+                    raise Exception(f"Gemini API returned {response.status_code}: {response.text}")
+                    
+                data = response.json()
+                if "embeddings" not in data:
+                    raise Exception(f"Unexpected Gemini response format: {data}")
+                    
+                batch_embeddings = [e["values"] for e in data["embeddings"]]
+                all_embeddings.extend(batch_embeddings)
+                break
+                
+        if retry_count == 5:
+            raise Exception("Gemini API rate limit exceeded. Tried 5 times and failed.")
             
-            if response.status_code != 200:
-                logger.error("gemini_embedding_failed", status=response.status_code, text=response.text)
-                raise Exception(f"Gemini API returned {response.status_code}: {response.text}")
-                
-            data = response.json()
-            if "embeddings" not in data:
-                raise Exception(f"Unexpected Gemini response format: {data}")
-                
-            batch_embeddings = [e["values"] for e in data["embeddings"]]
-            all_embeddings.extend(batch_embeddings)
+        # Add a small delay between batches to respect the 15 requests/minute free tier limit
+        time.sleep(2)
+
             
     return all_embeddings
 
