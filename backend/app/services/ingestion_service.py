@@ -25,7 +25,7 @@ from app.ingestion.github_loader import (
 )
 from app.ingestion.parser import parse_file
 from app.models.schemas import IngestionStatus, ProgressEvent
-from app.rag.embeddings import get_embedding_model
+
 from app.rag.retriever import build_bm25_index
 from app.rag.vector_store import delete_collection, index_chunks
 from app.repository.analyzer import detect_technologies
@@ -235,9 +235,6 @@ async def _ingest_repository(
         # ── Step 7: Embed & index ─────────────────────────────────────────────
         await _emit(queue, IngestionStatus.EMBEDDING, "Generating embeddings (this may take a moment)...", 65)
 
-        # Pre-load model
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, get_embedding_model)
 
         if force_reindex:
             delete_collection(repository_id)
