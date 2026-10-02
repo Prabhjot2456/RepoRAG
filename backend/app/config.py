@@ -15,7 +15,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(Path(__file__).parent.parent / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -24,12 +24,21 @@ class Settings(BaseSettings):
     # ── GitHub ──────────────────────────────────────────────────────────────
     github_token: str = Field(default="", description="GitHub personal access token")
 
+    # ── GitHub OAuth ───────────────────────────────────────────────────────
+    github_client_id: str = Field(default="", description="GitHub OAuth App Client ID")
+    github_client_secret: str = Field(default="", description="GitHub OAuth App Client Secret")
+    session_secret: str = Field(default="change-me-to-a-random-secret-key", description="Secret for signing session tokens")
+
     # ── LLM ─────────────────────────────────────────────────────────────────
     llm_provider: str = Field(default="ollama", description="ollama | openai")
-    llm_model: str = Field(default="qwen3:0.6b")
+    llm_model: str = Field(default="qwen3:4b")
     ollama_base_url: str = Field(default="http://localhost:11434")
     openai_api_key: str = Field(default="")
     openai_model: str = Field(default="gpt-4o-mini")
+
+    # ── Google Gemini ────────────────────────────────────────────────────────
+    gemini_api_key: str = Field(default="")
+    gemini_model: str = Field(default="gemini-3.8-flash")
 
     # ── Embeddings ───────────────────────────────────────────────────────────
     embedding_model: str = Field(default="all-MiniLM-L6-v2")

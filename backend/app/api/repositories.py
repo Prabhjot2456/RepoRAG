@@ -13,7 +13,7 @@ import asyncio
 import json
 from typing import List
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
 
 from app.models.schemas import (
@@ -41,17 +41,25 @@ router = APIRouter(prefix="/api/repositories", tags=["repositories"])
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
-async def analyze_repository(request: AnalyzeRequest):
+async def analyze_repository(request_body: AnalyzeRequest, request: Request):
     """Start or resume ingestion of a GitHub repository."""
-    url = request.url.strip()
+    url = request_body.url.strip()
     if not url:
         raise HTTPException(status_code=400, detail="Repository URL is required.")
 
+    # Extract per-user OAuth token if present
+    user_token = None
+    try:
+        from app.api.auth import extract_github_token
+        user_token = extract_github_token(request)
+    except Exception:
+        pass
+
     repository_id = get_repository_id(url)
-    logger.info("analyze_requested", url=url, repo_id=repository_id)
+    logger.info("analyze_requested", url=url, repo_id=repository_id, authenticated=bool(user_token))
 
     try:
-        rid = await run_ingestion(url, force_reindex=request.force_reindex)
+        rid = await run_ingestion(url, force_reindex=request_body.force_reindex, user_token=user_token)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 

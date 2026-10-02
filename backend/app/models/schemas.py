@@ -158,3 +158,26 @@ class RepositoryListItem(BaseModel):
     indexed_files: int
     total_chunks: int
     created_at: datetime
+
+
+# ── Auth Schemas ───────────────────────────────────────────────────────────────
+
+class GitHubLoginURL(BaseModel):
+    url: str = Field(..., description="GitHub OAuth authorization URL to redirect user to")
+
+
+class GitHubUser(BaseModel):
+    login: str
+    name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    email: Optional[str] = None
+    access_token: str = Field(..., description="Signed token for authenticating API requests")
+
+
+class AuthStatus(BaseModel):
+    authenticated: bool
+    user: Optional[GitHubUser] = None
+    oauth_configured: bool = Field(
+        default=False,
+        description="Whether GitHub OAuth credentials are configured on the server"
+    )

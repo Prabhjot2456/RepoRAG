@@ -270,10 +270,35 @@ const App = (() => {
     // Analyze button
     $('analyze-btn').addEventListener('click', analyzeRepository);
 
+    // Hero CTA analyze button
+    const heroBtn = $('hero-analyze-btn');
+    if (heroBtn) {
+      heroBtn.addEventListener('click', () => {
+        const heroUrl = $('hero-repo-url').value.trim();
+        if (heroUrl) $('repo-url-input').value = heroUrl;
+        analyzeRepository();
+      });
+    }
+
     // Enter key in URL input
     $('repo-url-input').addEventListener('keydown', e => {
       if (e.key === 'Enter') analyzeRepository();
     });
+
+    // Enter key in hero URL input
+    const heroInput = $('hero-repo-url');
+    if (heroInput) {
+      heroInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          $('repo-url-input').value = heroInput.value.trim();
+          analyzeRepository();
+        }
+      });
+      // Sync hero input with header input
+      heroInput.addEventListener('input', () => {
+        $('repo-url-input').value = heroInput.value;
+      });
+    }
 
     // Send button
     $('send-btn').addEventListener('click', () => {
@@ -329,6 +354,8 @@ const App = (() => {
     document.querySelectorAll('.example-chip[data-url]').forEach(chip => {
       chip.addEventListener('click', () => {
         $('repo-url-input').value = chip.dataset.url;
+        const heroUrlInput = $('hero-repo-url');
+        if (heroUrlInput) heroUrlInput.value = chip.dataset.url;
       });
     });
   }

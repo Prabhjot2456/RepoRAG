@@ -66,13 +66,21 @@ def parse_github_url(url: str) -> Tuple[str, str]:
     return match.group("owner"), match.group("repo")
 
 
-async def fetch_repository_info(url: str) -> GitHubRepositoryInfo:
-    """Fetch repository metadata from the GitHub API."""
+async def fetch_repository_info(url: str, user_token: str | None = None) -> GitHubRepositoryInfo:
+    """Fetch repository metadata from the GitHub API.
+
+    Args:
+        url: GitHub repository URL
+        user_token: Optional per-user OAuth token (takes priority over global token)
+    """
     owner, repo_name = parse_github_url(url)
 
+    # Use per-user token if provided, else fall back to global token
+    token = user_token or settings.github_token
+
     headers = {"Accept": "application/vnd.github.v3+json"}
-    if settings.github_token:
-        headers["Authorization"] = f"token {settings.github_token}"
+    if token:
+        headers["Authorization"] = f"token {token}"
 
     api_url = f"https://api.github.com/repos/{owner}/{repo_name}"
 
@@ -99,10 +107,10 @@ async def fetch_repository_info(url: str) -> GitHubRepositoryInfo:
 
         data = response.json()
 
-        if data.get("private", False) and not settings.github_token:
+        if data.get("private", False) and not token:
             raise GitHubLoaderError(
                 "This repository is private. "
-                "Provide a GITHUB_TOKEN with repo access in your .env."
+                "Log in with GitHub OAuth or provide a GITHUB_TOKEN with repo access in your .env."
             )
 
         # Fetch latest commit SHA
@@ -134,19 +142,26 @@ async def fetch_repository_info(url: str) -> GitHubRepositoryInfo:
         )
 
 
-def clone_repository(clone_url: str, dest_dir: Path) -> Repo:
+def clone_repository(clone_url: str, dest_dir: Path, user_token: str | None = None) -> Repo:
     """
     Clone a repository to dest_dir.
     Returns the Repo object.
     Raises GitHubLoaderError on failure.
+
+    Args:
+        clone_url: HTTPS clone URL for the repository
+        dest_dir: Destination directory for the cloned repo
+        user_token: Optional per-user OAuth token for private repos
     """
     if dest_dir.exists():
         cleanup_repository(dest_dir)
 
-    if settings.github_token:
+    # Use per-user token if provided, else fall back to global token
+    token = user_token or settings.github_token
+    if token:
         # Embed token into clone URL for private repos
         clone_url = clone_url.replace(
-            "https://", f"https://{settings.github_token}@"
+            "https://", f"https://{token}@"
         )
 
     logger.info("cloning_repository", url=clone_url.split("@")[-1], dest=str(dest_dir))

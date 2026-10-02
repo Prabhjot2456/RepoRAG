@@ -79,10 +79,15 @@ async def _emit(queue: asyncio.Queue, status: IngestionStatus, message: str, pro
 
 _background_tasks = set()
 
-async def run_ingestion(url: str, force_reindex: bool = False) -> str:
+async def run_ingestion(url: str, force_reindex: bool = False, user_token: str | None = None) -> str:
     """
     Start ingestion for a GitHub repository.
     Returns the repository_id. The actual work runs in a background task.
+
+    Args:
+        url: GitHub repository URL
+        force_reindex: Force re-indexing even if cached
+        user_token: Optional per-user OAuth token for private repos
     """
     repository_id = get_repository_id(url)
     queue = get_or_create_queue(repository_id)
@@ -92,7 +97,7 @@ async def run_ingestion(url: str, force_reindex: bool = False) -> str:
     if metadata and metadata.status == IngestionStatus.READY and not force_reindex:
         # Check if there's a new commit
         try:
-            info = await fetch_repository_info(url)
+            info = await fetch_repository_info(url, user_token=user_token)
             cached_sha = get_cached_sha(url)
             if cached_sha and info.latest_commit_sha == cached_sha:
                 await _emit(queue, IngestionStatus.CACHED, "Repository already indexed and up-to-date.", 100)
@@ -101,7 +106,7 @@ async def run_ingestion(url: str, force_reindex: bool = False) -> str:
             pass
 
     # Launch background task
-    task = asyncio.create_task(_ingest_repository(url, repository_id, queue, force_reindex))
+    task = asyncio.create_task(_ingest_repository(url, repository_id, queue, force_reindex, user_token))
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
     return repository_id
@@ -112,6 +117,7 @@ async def _ingest_repository(
     repository_id: str,
     queue: asyncio.Queue,
     force_reindex: bool,
+    user_token: str | None = None,
 ) -> None:
     """Background ingestion task."""
     repo_dir: Optional[Path] = None
@@ -129,7 +135,7 @@ async def _ingest_repository(
         await _emit(queue, IngestionStatus.FETCHING, "Validating repository URL...", 5)
 
         try:
-            info = await fetch_repository_info(url)
+            info = await fetch_repository_info(url, user_token=user_token)
         except GitHubLoaderError as exc:
             await _emit(queue, IngestionStatus.FAILED, str(exc), 0)
             metadata.status = IngestionStatus.FAILED
@@ -161,7 +167,7 @@ async def _ingest_repository(
 
         try:
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(None, clone_repository, info.clone_url, repo_dir)
+            await loop.run_in_executor(None, clone_repository, info.clone_url, repo_dir, user_token)
         except GitHubLoaderError as exc:
             await _emit(queue, IngestionStatus.FAILED, str(exc), 0)
             metadata.status = IngestionStatus.FAILED

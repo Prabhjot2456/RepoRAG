@@ -322,6 +322,12 @@ def _chunk_generic(parsed: ParsedFile) -> List[Chunk]:
 def chunk_file(parsed: ParsedFile) -> List[Chunk]:
     """
     Chunk a parsed file using the most appropriate strategy.
+
+    Priority:
+      1. AST-based chunking (tree-sitter) for supported languages
+      2. Regex-based language-specific chunker
+      3. Generic sliding-window chunker
+
     Returns a list of Chunk objects with metadata.
     """
     lang = parsed.language or ""
@@ -342,6 +348,22 @@ def chunk_file(parsed: ParsedFile) -> List[Chunk]:
             },
         )]
 
+    # Try AST-based chunking first (tree-sitter)
+    try:
+        from app.ingestion.ast_chunker import chunk_file_with_ast
+        ast_chunks = chunk_file_with_ast(parsed)
+        if ast_chunks is not None and len(ast_chunks) > 0:
+            logger.info(
+                "ast_chunking_used",
+                path=parsed.relative_path,
+                language=lang,
+                chunks=len(ast_chunks),
+            )
+            return ast_chunks
+    except Exception as exc:
+        logger.debug("ast_chunking_fallback", path=parsed.relative_path, error=str(exc))
+
+    # Fall back to regex-based chunkers
     if lang == "python":
         return _chunk_python(parsed)
     elif lang in ("javascript", "typescript"):

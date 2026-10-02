@@ -27,6 +27,7 @@ rank-bm25==0.2.2
 
 # LLM providers
 openai>=1.0.0
+google-genai>=1.0.0
 
 # File parsing
 chardet==5.2.0
@@ -41,3 +42,17 @@ pytest-asyncio==0.24.0
 # Utilities
 python-dotenv==1.0.1
 tenacity==9.0.0
+
+# AST-based code chunking (tree-sitter)
+tree-sitter>=0.23.0
+tree-sitter-python>=0.23.0
+tree-sitter-javascript>=0.23.0
+tree-sitter-typescript>=0.23.0
+tree-sitter-go>=0.23.0
+tree-sitter-rust>=0.23.0
+tree-sitter-java>=0.23.0
+tree-sitter-c>=0.23.0
+tree-sitter-cpp>=0.23.0
+
+# OAuth session tokens
+itsdangerous>=2.1.0

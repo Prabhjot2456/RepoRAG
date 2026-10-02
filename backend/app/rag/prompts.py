@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 SYSTEM_PROMPT = """You are an AI software repository analyst. Your sole purpose is to answer questions about the specific GitHub repository that has been provided to you.
+/no_think
 
 CRITICAL RULES:
 1. Answer ONLY using the repository context provided below — do not use prior knowledge to fabricate repository details.
@@ -60,9 +61,9 @@ def build_context_string(chunks: List[Dict[str, Any]]) -> str:
         symbol_line = f"\nSymbol: {symbol}" if symbol else ""
 
         content = chunk.get("content", "")
-        # Truncate very long chunks
-        if len(content) > 3000:
-            content = content[:3000] + "\n... [truncated]"
+        # Truncate very long chunks to keep context lean for faster inference
+        if len(content) > 1500:
+            content = content[:1500] + "\n... [truncated]"
 
         block = CONTEXT_BLOCK_TEMPLATE.format(
             index=i,

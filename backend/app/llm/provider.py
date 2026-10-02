@@ -1,6 +1,6 @@
 """
 LLM abstraction layer.
-Supports: Ollama, OpenAI-compatible APIs.
+Supports: Ollama, OpenAI-compatible APIs, Google Gemini.
 Add new providers here without changing the rest of the codebase.
 """
 
@@ -27,9 +27,11 @@ async def _call_ollama(messages: List[Dict[str, str]]) -> str:
         "model": settings.llm_model,
         "messages": messages,
         "stream": False,
+        "think": False,  # Disable Qwen3 thinking mode — massive speed improvement
         "options": {
             "temperature": 0.1,
-            "num_predict": 2048,
+            "num_predict": 1024,
+            "num_ctx": 4096,
         },
     }
 
@@ -61,6 +63,12 @@ async def _call_ollama(messages: List[Dict[str, str]]) -> str:
         content = data.get("message", {}).get("content", "")
         if not content:
             raise LLMProviderError("Ollama returned an empty response.")
+
+        # Strip Qwen3 thinking tags — these are hidden chain-of-thought
+        # tokens that waste generation time and shouldn't appear in output
+        import re
+        content = re.sub(r"<think>[\s\S]*?</think>", "", content).strip()
+
         return content
 
 
@@ -90,6 +98,65 @@ async def _call_openai(messages: List[Dict[str, str]]) -> str:
         raise LLMProviderError(f"OpenAI API error: {exc}") from exc
 
 
+# ── Gemini provider ────────────────────────────────────────────────────────────
+
+async def _call_gemini(messages: List[Dict[str, str]]) -> str:
+    import httpx
+
+    if not settings.gemini_api_key:
+        raise LLMProviderError("GEMINI_API_KEY is not set in .env")
+
+    # Convert chat messages to Gemini REST API format
+    gemini_contents = []
+    system_instruction = None
+    for msg in messages:
+        role = msg["role"]
+        if role == "system":
+            system_instruction = msg["content"]
+        elif role == "assistant":
+            gemini_contents.append({"role": "model", "parts": [{"text": msg["content"]}]})
+        else:
+            gemini_contents.append({"role": "user", "parts": [{"text": msg["content"]}]})
+
+    # Build request payload
+    payload: Dict[str, Any] = {
+        "contents": gemini_contents,
+        "generationConfig": {
+            "temperature": 0.1,
+            "maxOutputTokens": 2048,
+        },
+    }
+    if system_instruction:
+        payload["systemInstruction"] = {
+            "parts": [{"text": system_instruction}]
+        }
+
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{settings.gemini_model}:generateContent?key={settings.gemini_api_key}"
+    )
+
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        try:
+            response = await client.post(url, json=payload)
+        except httpx.ConnectError:
+            raise LLMProviderError("Cannot connect to Gemini API. Check your internet connection.")
+        except httpx.TimeoutException:
+            raise LLMProviderError("Gemini API request timed out. Try again.")
+
+        if response.status_code != 200:
+            raise LLMProviderError(
+                f"Gemini API returned {response.status_code}: {response.text[:300]}"
+            )
+
+        data = response.json()
+        try:
+            content = data["candidates"][0]["content"]["parts"][0]["text"]
+            return content
+        except (KeyError, IndexError):
+            raise LLMProviderError(f"Unexpected Gemini response format: {str(data)[:300]}")
+
+
 # ── Public interface ───────────────────────────────────────────────────────────
 
 async def get_llm_response(messages: List[Dict[str, str]]) -> str:
@@ -104,10 +171,12 @@ async def get_llm_response(messages: List[Dict[str, str]]) -> str:
         result = await _call_ollama(messages)
     elif provider == "openai":
         result = await _call_openai(messages)
+    elif provider == "gemini":
+        result = await _call_gemini(messages)
     else:
         raise LLMProviderError(
             f"Unknown LLM provider: '{provider}'. "
-            "Supported: ollama, openai"
+            "Supported: ollama, openai, gemini"
         )
 
     logger.info("llm_response_received", length=len(result))
@@ -138,6 +207,13 @@ async def check_llm_health() -> Dict[str, Any]:
                 "provider": "openai",
                 "model": settings.openai_model,
                 "reachable": bool(settings.openai_api_key),
+                "model_available": True,
+            }
+        elif provider == "gemini":
+            return {
+                "provider": "gemini",
+                "model": settings.gemini_model,
+                "reachable": bool(settings.gemini_api_key),
                 "model_available": True,
             }
     except Exception as exc:

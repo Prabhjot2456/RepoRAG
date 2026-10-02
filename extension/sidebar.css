@@ -1,0 +1,490 @@
+/**
+ * sidebar.css — Styles for the RepoRAG sidebar injected into GitHub pages.
+ *
+ * All selectors are prefixed with #reporag- or .rr- to avoid conflicts
+ * with GitHub's own styles.
+ */
+
+/* ── CSS Variables ─────────────────────────────────────────────────────────── */
+:root {
+  --rr-bg-primary: #0d1117;
+  --rr-bg-secondary: #161b22;
+  --rr-bg-tertiary: #1c2129;
+  --rr-bg-input: #0d1117;
+  --rr-border: #30363d;
+  --rr-border-light: #21262d;
+  --rr-text-primary: #c9d1d9;
+  --rr-text-secondary: #8b949e;
+  --rr-text-muted: #484f58;
+  --rr-accent: #6366f1;
+  --rr-accent-hover: #818cf8;
+  --rr-accent-glow: rgba(99, 102, 241, 0.2);
+  --rr-success: #3fb950;
+  --rr-error: #f85149;
+  --rr-warning: #d29922;
+  --rr-sidebar-width: 400px;
+  --rr-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+}
+
+/* ── Toggle Button ─────────────────────────────────────────────────────────── */
+#reporag-toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999999;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--rr-border);
+  background: var(--rr-bg-secondary);
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+#reporag-toggle:hover {
+  background: var(--rr-accent);
+  border-color: var(--rr-accent);
+  transform: scale(1.08);
+  box-shadow: 0 4px 32px var(--rr-accent-glow);
+}
+
+#reporag-toggle.rr-active {
+  background: var(--rr-accent);
+  border-color: var(--rr-accent);
+}
+
+/* ── Sidebar Container ─────────────────────────────────────────────────────── */
+#reporag-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--rr-sidebar-width);
+  z-index: 999998;
+  background: var(--rr-bg-primary);
+  border-left: 1px solid var(--rr-border);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--rr-font);
+  font-size: 13px;
+  color: var(--rr-text-primary);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+#reporag-sidebar.rr-closed {
+  transform: translateX(100%);
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+.rr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rr-border);
+  background: var(--rr-bg-secondary);
+  flex-shrink: 0;
+}
+
+.rr-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rr-logo {
+  font-size: 18px;
+}
+
+.rr-title {
+  font-weight: 700;
+  font-size: 15px;
+  background: linear-gradient(135deg, #6366f1, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.rr-btn-icon {
+  background: none;
+  border: none;
+  color: var(--rr-text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.rr-btn-icon:hover {
+  color: var(--rr-text-primary);
+  background: var(--rr-bg-tertiary);
+}
+
+/* ── Status Bar ────────────────────────────────────────────────────────────── */
+.rr-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--rr-bg-secondary);
+  border-bottom: 1px solid var(--rr-border-light);
+  font-size: 11px;
+  color: var(--rr-text-secondary);
+  flex-shrink: 0;
+}
+
+.rr-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rr-status-checking { background: var(--rr-warning); animation: rr-pulse 1.5s infinite; }
+.rr-status-ok { background: var(--rr-success); }
+.rr-status-error { background: var(--rr-error); }
+
+@keyframes rr-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Repo Banner ───────────────────────────────────────────────────────────── */
+.rr-repo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--rr-bg-tertiary);
+  border-bottom: 1px solid var(--rr-border-light);
+  flex-shrink: 0;
+}
+
+.rr-repo-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--rr-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rr-btn-small {
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  background: var(--rr-accent);
+  color: white;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.rr-btn-small:hover {
+  background: var(--rr-accent-hover);
+  box-shadow: 0 2px 12px var(--rr-accent-glow);
+}
+
+.rr-btn-small:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Progress ──────────────────────────────────────────────────────────────── */
+.rr-progress {
+  padding: 16px;
+  flex-shrink: 0;
+}
+
+.rr-progress-text {
+  font-size: 12px;
+  color: var(--rr-text-secondary);
+  margin-bottom: 8px;
+}
+
+.rr-progress-bar {
+  height: 4px;
+  background: var(--rr-bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.rr-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--rr-accent), var(--rr-accent-hover));
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+/* ── Messages ──────────────────────────────────────────────────────────────── */
+.rr-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rr-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rr-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.rr-messages::-webkit-scrollbar-thumb {
+  background: var(--rr-border);
+  border-radius: 3px;
+}
+
+.rr-message-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.rr-message-group.rr-user {
+  align-items: flex-end;
+}
+
+.rr-message-group.rr-assistant {
+  align-items: flex-start;
+}
+
+.rr-message {
+  max-width: 92%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  line-height: 1.5;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.rr-message.rr-user {
+  background: var(--rr-accent);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.rr-message.rr-assistant {
+  background: var(--rr-bg-secondary);
+  border: 1px solid var(--rr-border-light);
+  border-bottom-left-radius: 4px;
+}
+
+.rr-message.rr-error {
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: 8px;
+}
+
+.rr-error {
+  color: var(--rr-error);
+}
+
+/* ── Code blocks ───────────────────────────────────────────────────────────── */
+.rr-code-block {
+  background: var(--rr-bg-primary);
+  border: 1px solid var(--rr-border-light);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 8px 0;
+  overflow-x: auto;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.rr-inline-code {
+  background: var(--rr-bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9em;
+}
+
+/* ── Sources ───────────────────────────────────────────────────────────────── */
+.rr-sources {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--rr-border-light);
+}
+
+.rr-sources-label {
+  font-size: 11px;
+  color: var(--rr-text-muted);
+  margin-bottom: 6px;
+}
+
+.rr-source-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.rr-source-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--rr-accent);
+  background: var(--rr-accent-glow);
+  border-radius: 4px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  cursor: default;
+}
+
+/* ── Typing Indicator ──────────────────────────────────────────────────────── */
+.rr-typing {
+  display: flex;
+  gap: 4px;
+  padding: 12px 16px;
+  background: var(--rr-bg-secondary);
+  border: 1px solid var(--rr-border-light);
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+  width: fit-content;
+}
+
+.rr-typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rr-text-muted);
+  animation: rr-dot-bounce 1.4s infinite ease-in-out both;
+}
+
+.rr-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.rr-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes rr-dot-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* ── Suggestion Buttons ────────────────────────────────────────────────────── */
+.rr-suggestion-btn {
+  display: inline-block;
+  margin: 3px 0;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--rr-accent);
+  background: var(--rr-accent-glow);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--rr-font);
+  text-align: left;
+}
+
+.rr-suggestion-btn:hover {
+  background: rgba(99, 102, 241, 0.3);
+  border-color: var(--rr-accent);
+  color: white;
+}
+
+/* ── Input Area ────────────────────────────────────────────────────────────── */
+.rr-input-area {
+  padding: 12px;
+  border-top: 1px solid var(--rr-border);
+  background: var(--rr-bg-secondary);
+  flex-shrink: 0;
+}
+
+.rr-selection-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  background: var(--rr-accent-glow);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--rr-accent);
+}
+
+.rr-clear-selection {
+  font-size: 11px;
+}
+
+.rr-input-box {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  background: var(--rr-bg-input);
+  border: 1px solid var(--rr-border);
+  border-radius: 10px;
+  padding: 6px 8px 6px 12px;
+  transition: border-color 0.2s;
+}
+
+.rr-input-box:focus-within {
+  border-color: var(--rr-accent);
+  box-shadow: 0 0 0 3px var(--rr-accent-glow);
+}
+
+#rr-question-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--rr-text-primary);
+  font-family: var(--rr-font);
+  font-size: 13px;
+  resize: none;
+  max-height: 100px;
+  line-height: 1.4;
+  padding: 4px 0;
+}
+
+#rr-question-input::placeholder {
+  color: var(--rr-text-muted);
+}
+
+#rr-send-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: var(--rr-accent);
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+#rr-send-btn:hover {
+  background: var(--rr-accent-hover);
+  box-shadow: 0 2px 12px var(--rr-accent-glow);
+}
+
+#rr-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  #reporag-sidebar {
+    width: 100vw;
+  }
+}
