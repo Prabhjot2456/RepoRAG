@@ -48,6 +48,16 @@ def embed_texts(texts: List[str], batch_size: int = 64) -> List[List[float]]:
                 response = client.post(url, json={"requests": requests})
                 
                 if response.status_code == 429:
+                    try:
+                        error_data = response.json()
+                        error_msg = error_data.get("error", {}).get("message", "")
+                        if "exceeded your current quota" in error_msg.lower():
+                            logger.error("gemini_quota_exceeded", text=response.text)
+                            raise Exception("Google Gemini API Quota Exceeded! You have hit your daily limit or billing limit. Please check your Google AI Studio dashboard.")
+                    except Exception as e:
+                        if "Google Gemini API Quota Exceeded" in str(e):
+                            raise e
+
                     # Rate limit hit, wait and retry
                     wait_time = 4 * (2 ** retry_count)  # 4s, 8s, 16s...
                     logger.warning("gemini_rate_limit_hit", waiting=wait_time, retry=retry_count)
