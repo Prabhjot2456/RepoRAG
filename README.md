@@ -27,7 +27,7 @@ flowchart TD
     J --> M
     M --> N["Cross-Encoder Reranker\n(optional)"]
     N --> O["Context Assembler"]
-    O --> P["LLM\n(Ollama / OpenAI)"]
+    O --> P["LLM\n(Google Gemini)"]
     P --> Q["Answer + Source Citations"]
 ```
 
@@ -58,36 +58,19 @@ flowchart TD
 | Git | any |
 | Ollama | latest |
 
-### 1 — Install Ollama
+### 1 — Get a Gemini API Key
 
-**Windows/macOS:**
-Download from [https://ollama.com/download](https://ollama.com/download)
+1. Go to [Google AI Studio](https://aistudio.google.com/apikey)
+2. Create an API key (Free tier is generous: 15 requests/min)
 
-**Linux:**
-```bash
-curl -fsSL https://ollama.com/install.sh | sh
-```
-
-### 2 — Pull a model
-
-```bash
-ollama pull qwen3:0.6b
-```
-
-> You can use any Ollama model. Larger models give better answers:
-> - `qwen3:0.6b` — fast, ~400MB
-> - `qwen3:1.7b` — better, ~1GB  
-> - `llama3.2:3b` — great quality, ~2GB
-> - `mistral:7b` — excellent, ~4GB
-
-### 3 — Clone this repository
+### 2 — Clone this repository
 
 ```bash
 git clone https://github.com/your-username/github-rag
 cd github-rag
 ```
 
-### 4 — Set up the backend
+### 3 — Set up the backend
 
 ```bash
 cd backend
@@ -108,9 +91,9 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Edit `.env` if needed (defaults work out of the box for Ollama).
+Edit `.env` and add your `GEMINI_API_KEY`.
 
-### 5 — Start the backend
+### 4 — Start the backend
 
 ```bash
 # From backend/ directory (with venv activated)
@@ -122,16 +105,13 @@ You should see:
 INFO: Uvicorn running on http://0.0.0.0:8000
 ```
 
-### 6 — Open the frontend
+### 5 — Load the Chrome Extension
 
-Simply open `frontend/index.html` in your browser, or serve it:
-
-```bash
-# Python simple server (from project root)
-python -m http.server 3000 --directory frontend
-```
-
-Then visit: `http://localhost:3000`
+1. Open Chrome and go to `chrome://extensions/`
+2. Enable **Developer mode** in the top right.
+3. Click **Load unpacked**.
+4. Select the `extension/` directory from this project.
+5. Go to any GitHub repository page to see the RAG sidebar!
 
 ---
 
@@ -140,9 +120,9 @@ Then visit: `http://localhost:3000`
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `GITHUB_TOKEN` | *(empty)* | GitHub PAT — optional, increases API rate limit |
-| `LLM_PROVIDER` | `ollama` | `ollama` or `openai` |
-| `LLM_MODEL` | `qwen3:0.6b` | Model name for Ollama or OpenAI |
-| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL |
+| `LLM_PROVIDER` | `gemini` | `gemini` or `openai` |
+| `GEMINI_API_KEY` | *(empty)* | Google Gemini API Key |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | Model name for Gemini |
 | `OPENAI_API_KEY` | *(empty)* | OpenAI key (if provider=openai) |
 | `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | Sentence-transformers model |
 | `EMBEDDING_DEVICE` | `cpu` | `cpu` or `cuda` |
@@ -255,9 +235,7 @@ pytest tests/ -v
 
 ---
 
-## Switching LLM Providers
-
-### Use OpenAI instead of Ollama
+### Use OpenAI instead of Gemini
 
 In `.env`:
 ```env
@@ -266,27 +244,13 @@ OPENAI_API_KEY=sk-...
 OPENAI_MODEL=gpt-4o-mini
 ```
 
-### Use a different Ollama model
-
-```bash
-ollama pull llama3.2:3b
-```
-
-In `.env`:
-```env
-LLM_MODEL=llama3.2:3b
-```
-
 ---
 
 ## Using Docker Compose
 
 ```bash
-# Start Ollama + backend
+# Start backend
 docker compose up -d
-
-# Pull a model into the Ollama container
-docker exec -it github-rag-ollama-1 ollama pull qwen3:0.6b
 ```
 
 ---
@@ -329,15 +293,15 @@ github-rag/
 │   │       ├── logger.py         ← Structured logging
 │   │       └── cache.py          ← Commit SHA cache
 │   └── tests/
-├── frontend/
-│   ├── index.html                ← Single-page app
-│   ├── css/styles.css            ← Dark glassmorphism UI
-│   └── js/
-│       ├── api.js                ← API client
-│       ├── app.js                ← Main controller
-│       ├── chat.js               ← Chat UI
-│       ├── explorer.js           ← File explorer
-│       └── markdown.js           ← Markdown + syntax highlighting
+├── extension/                      ← Chrome Extension
+│   ├── manifest.json
+│   ├── background.js
+│   ├── content.js
+│   ├── sidebar.css
+│   ├── popup.html
+│   ├── popup.js
+│   ├── popup.css
+│   └── icons/
 ├── data/
 │   ├── chroma/                   ← Vector DB storage
 │   └── repositories/             ← Temp clone directory
@@ -347,19 +311,6 @@ github-rag/
 ---
 
 ## Troubleshooting
-
-### "Cannot connect to Ollama"
-Make sure Ollama is running:
-```bash
-ollama serve
-```
-Or check: `http://localhost:11434`
-
-### "Model not found"
-Pull the model first:
-```bash
-ollama pull qwen3:0.6b
-```
 
 ### "GitHub API rate limit exceeded"
 Add a `GITHUB_TOKEN` to `.env`. Create one at:
@@ -378,8 +329,8 @@ Set `EMBEDDING_DEVICE=cuda` if you have a GPU, or use a smaller model:
 EMBEDDING_MODEL=paraphrase-MiniLM-L3-v2
 ```
 
-### Frontend can't reach backend
-Make sure the backend is on port 8000. The frontend `js/api.js` has `API_BASE = 'http://localhost:8000'` — update this if your server runs on a different port.
+### Extension can't reach backend
+Make sure the backend is on port 8000. If you deploy it, update `API_BASE` in the extension's `content.js` and `popup.js` to point to your deployed URL.
 
 ---
 
