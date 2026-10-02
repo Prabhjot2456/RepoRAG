@@ -9,7 +9,7 @@
  */
 
 const API_BASE_KEY = 'reporag_api_base';
-const DEFAULT_API_BASE = 'http://localhost:8000';
+const DEFAULT_API_BASE = 'https://reporag-backend-r1ye.onrender.com';
 
 // ── Tab URL monitoring ────────────────────────────────────────────────────────
 

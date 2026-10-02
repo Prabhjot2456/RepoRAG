@@ -9,7 +9,7 @@
   ],
   "host_permissions": [
     "https://github.com/*",
-    "http://localhost:8000/*"
+    "https://reporag-backend-r1ye.onrender.com/*"
   ],
   "background": {
     "service_worker": "background.js"

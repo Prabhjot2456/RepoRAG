@@ -6,7 +6,7 @@
  *   - GitHub OAuth login/logout
  */
 
-const DEFAULT_API_BASE = 'http://localhost:8000';
+const DEFAULT_API_BASE = 'https://reporag-backend-r1ye.onrender.com';
 
 const $ = (id) => document.getElementById(id);
 

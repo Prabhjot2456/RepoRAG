@@ -15,7 +15,7 @@
   if (document.getElementById('reporag-sidebar')) return;
 
   // ── Constants ───────────────────────────────────────────────────────────────
-  let API_BASE = 'http://localhost:8000';
+  let API_BASE = 'https://reporag-backend-r1ye.onrender.com';
   let currentRepo = null;
   let currentRepoId = null;
   let conversationId = null;
