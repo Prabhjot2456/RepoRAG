@@ -74,11 +74,7 @@ async def llm_health():
     return info
 
 
-# ── Serve frontend (when using uvicorn directly) ──────────────────────────────
-frontend_dir = Path(__file__).parent.parent.parent / "frontend"
-if frontend_dir.exists():
-    app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
-
+# (Frontend mount removed - using Chrome extension instead)
 
 if __name__ == "__main__":
     import uvicorn
