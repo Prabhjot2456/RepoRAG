@@ -1,51 +1,64 @@
 """
 Embedding abstraction.
-Wraps sentence-transformers with batching and caching.
+Uses Google Gemini API for embeddings instead of local models to save RAM.
 """
 
 from __future__ import annotations
 
+import httpx
 from typing import List
-
-from sentence_transformers import SentenceTransformer
 
 from app.config import settings
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-_model: SentenceTransformer | None = None
-
-
-def get_embedding_model() -> SentenceTransformer:
-    """Lazy-load the embedding model (singleton)."""
-    global _model
-    if _model is None:
-        logger.info("loading_embedding_model", model=settings.embedding_model)
-        _model = SentenceTransformer(
-            settings.embedding_model,
-            device=settings.embedding_device,
-        )
-        logger.info("embedding_model_loaded", model=settings.embedding_model)
-    return _model
-
 
 def embed_texts(texts: List[str], batch_size: int = 64) -> List[List[float]]:
     """
-    Embed a list of texts.
+    Embed a list of texts using Gemini API.
     Returns a list of embedding vectors.
     """
-    model = get_embedding_model()
-    embeddings = model.encode(
-        texts,
-        batch_size=batch_size,
-        show_progress_bar=False,
-        convert_to_numpy=True,
-        normalize_embeddings=True,
-    )
-    return embeddings.tolist()
+    if not texts:
+        return []
+
+    if not settings.gemini_api_key:
+        raise ValueError("GEMINI_API_KEY is missing. Cannot generate embeddings.")
+
+    all_embeddings = []
+    
+    # Process in batches
+    for i in range(0, len(texts), batch_size):
+        batch_texts = texts[i : i + batch_size]
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:batchEmbedContents?key={settings.gemini_api_key}"
+        
+        requests = []
+        for text in batch_texts:
+            # Handle empty texts by providing a space, Gemini API fails on empty strings
+            safe_text = text if text.strip() else " "
+            requests.append({
+                "model": "models/text-embedding-004",
+                "content": {"parts": [{"text": safe_text}]}
+            })
+            
+        with httpx.Client(timeout=30.0) as client:
+            response = client.post(url, json={"requests": requests})
+            
+            if response.status_code != 200:
+                logger.error("gemini_embedding_failed", status=response.status_code, text=response.text)
+                raise Exception(f"Gemini API returned {response.status_code}: {response.text}")
+                
+            data = response.json()
+            if "embeddings" not in data:
+                raise Exception(f"Unexpected Gemini response format: {data}")
+                
+            batch_embeddings = [e["values"] for e in data["embeddings"]]
+            all_embeddings.extend(batch_embeddings)
+            
+    return all_embeddings
 
 
 def embed_query(query: str) -> List[float]:
     """Embed a single query string."""
     return embed_texts([query])[0]
+

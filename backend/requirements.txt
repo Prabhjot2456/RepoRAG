@@ -12,8 +12,7 @@ httpx==0.27.2
 # GitHub and Git
 GitPython==3.1.43
 
-# Embeddings (sentence-transformers downloads torch automatically)
-sentence-transformers>=2.2.2
+# Embeddings (Now using Gemini API to save RAM)
 
 # Vector DB — pure Python (no C++ build tools required)
 # Uses numpy cosine similarity; swap for chromadb if MSVC is available
