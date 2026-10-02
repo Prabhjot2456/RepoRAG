@@ -30,14 +30,14 @@ def embed_texts(texts: List[str], batch_size: int = 64) -> List[List[float]]:
     # Process in batches
     for i in range(0, len(texts), batch_size):
         batch_texts = texts[i : i + batch_size]
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:batchEmbedContents?key={settings.gemini_api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents?key={settings.gemini_api_key}"
         
         requests = []
         for text in batch_texts:
             # Handle empty texts by providing a space, Gemini API fails on empty strings
             safe_text = text if text.strip() else " "
             requests.append({
-                "model": "models/text-embedding-004",
+                "model": "models/gemini-embedding-001",
                 "content": {"parts": [{"text": safe_text}]}
             })
             
